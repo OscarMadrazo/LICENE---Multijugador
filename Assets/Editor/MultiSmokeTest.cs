@@ -18,7 +18,7 @@ public static class MultiSmokeTest
     static int paso;
     static double esperarHasta;
     static int fallos;
-    static string respaldoCola;
+    static string respaldoCola, respaldoHistorial;
 
     static MultiSmokeTest()
     {
@@ -66,6 +66,7 @@ public static class MultiSmokeTest
             case 0:
                 if (Esperar(1.5)) return;
                 respaldoCola = LiceneCloud.ExportPending();
+                if (System.IO.File.Exists(RetoCooperativo.RutaHistorial)) respaldoHistorial = System.IO.File.ReadAllText(RetoCooperativo.RutaHistorial);
                 var menu = Object.FindFirstObjectByType<MainMenuLauncher>();
                 Check("Menú creado", menu != null && GameObject.Find("Menu LICENE") != null);
                 Captura("multi_menu.png", Camera.main, null, null, true);
@@ -144,6 +145,11 @@ public static class MultiSmokeTest
                 break;
             case 7:
                 if (Esperar(1.5)) return;
+                LiceneMenuPausa.Instance.Mostrar(true);
+                Check("Menú abierto sin detener la red", LiceneMenuPausa.Pausado && Time.timeScale == 1f);
+                Captura("multi_pausa.png", PlayerController.Local.camara.GetComponent<Camera>(), null, null, true);
+                LiceneMenuPausa.Instance.Mostrar(false);
+                Check("Álbum guardado", RetoCooperativo.Instance.historial.entregas >= 1 && System.IO.File.Exists(RetoCooperativo.RutaHistorial));
                 Check("Nueva ronda", RetoCooperativo.Instance.Ronda == 2 && RetoCooperativo.Instance.Puntos == 0 && !RetoCooperativo.Instance.RondaTerminada);
                 var errs = errores.Distinct().ToList();
                 Check("Sin errores en consola", errs.Count == 0, string.Join(" | ", errs.Take(5)));
@@ -179,6 +185,8 @@ public static class MultiSmokeTest
     static void Terminar()
     {
         if (respaldoCola != null) LiceneCloud.ImportPending(respaldoCola);
+        if (respaldoHistorial != null) System.IO.File.WriteAllText(RetoCooperativo.RutaHistorial, respaldoHistorial);
+        else if (System.IO.File.Exists(RetoCooperativo.RutaHistorial)) System.IO.File.Delete(RetoCooperativo.RutaHistorial);
         File.WriteAllText("multi_smoke.txt", string.Join("\n", resultados) + $"\n{resultados.Count - fallos}/{resultados.Count} OK");
         Debug.Log("MultiSmokeTest:\n" + string.Join("\n", resultados));
         SessionState.SetBool(Flag, false);

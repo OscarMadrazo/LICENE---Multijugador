@@ -32,6 +32,7 @@ public class CogerObjeto : MonoBehaviourPun
     void Update()
     {
         if (!photonView.IsMine || cam == null) return;
+        if (LiceneMenuPausa.Pausado || LiceneCuentaPanel.Abierto) return;
 
         mirando = cargando == null ? BuscarPieza() : null;
         if (mirando != null) mirando.Resaltar();

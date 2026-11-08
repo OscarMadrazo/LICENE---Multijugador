@@ -63,6 +63,8 @@ public class RetoCooperativo : MonoBehaviourPunCallbacks, IOnEventCallback
         particula = Resources.Load<Material>("PiezasMat/Particula");
         CrearSonidos();
         ConstruirHud();
+        CargarHistorial();
+        ConstruirMenus();
     }
 
     void OnDestroy()
@@ -181,6 +183,7 @@ public class RetoCooperativo : MonoBehaviourPunCallbacks, IOnEventCallback
 
         if (ev.Code == EvEntrega)
         {
+            if (quien != null && quien.IsLocal) RegistrarEntrega(forma, color);
             if (z != null) { z.Celebrar(); Destello(z.transform.position + Vector3.up, PiezaLICENE.Tintes[color], 60); }
             Noticia($"{nombre} entregó {NombrePieza(forma, color)}  <color=#7CFF9A>+1</color>");
             Sonar(Sonido.Acierto);
@@ -216,6 +219,7 @@ public class RetoCooperativo : MonoBehaviourPunCallbacks, IOnEventCallback
         Destello(CentroMesa + Vector3.up * 3f, Color.white, 120);
 
         // Progreso para la app LICENE (se encola si no hay internet; solo si hay sesión iniciada).
+        GuardarRonda(puntos, mias);
         if (LiceneCloud.SignedIn && (mias > 0 || errores > 0))
         {
             LiceneCloud.ReportMission("Multijugador_LICENE", "Laboratorio Cooperativo LICENE",
@@ -269,6 +273,7 @@ public class RetoCooperativo : MonoBehaviourPunCallbacks, IOnEventCallback
 
     void Destello(Vector3 pos, Color color, int cantidad)
     {
+        if (LiceneAjustes.ModoCalma) return; // Sin destellos en modo calma.
         var go = new GameObject("Destello");
         go.transform.position = pos;
         var ps = go.AddComponent<ParticleSystem>();
@@ -290,6 +295,101 @@ public class RetoCooperativo : MonoBehaviourPunCallbacks, IOnEventCallback
         forma.radius = 0.5f;
         if (particula != null) go.GetComponent<ParticleSystemRenderer>().sharedMaterial = particula;
         ps.Play();
+    }
+
+
+    // ---------- Estadísticas y álbum guardados en el equipo ----------
+
+    [System.Serializable]
+    public class Historial
+    {
+        public int rondas, entregas, mejorEquipo;
+        public bool[] album = new bool[16]; // forma * 4 + color
+    }
+
+    public static string RutaHistorial => System.IO.Path.Combine(Application.persistentDataPath, "multijugador_licene.json");
+    public Historial historial = new Historial();
+    GameObject album;
+    readonly UnityEngine.UI.Image[] celdas = new UnityEngine.UI.Image[16];
+    UnityEngine.UI.Text resumenAlbum;
+
+    void CargarHistorial()
+    {
+        try
+        {
+            if (System.IO.File.Exists(RutaHistorial)) historial = JsonUtility.FromJson<Historial>(System.IO.File.ReadAllText(RutaHistorial)) ?? new Historial();
+        }
+        catch (System.Exception e) { Debug.LogWarning("Multijugador: historial dañado: " + e.Message); historial = new Historial(); }
+        if (historial.album == null || historial.album.Length != 16) historial.album = new bool[16];
+    }
+
+    void GuardarHistorial()
+    {
+        try { System.IO.File.WriteAllText(RutaHistorial, JsonUtility.ToJson(historial)); }
+        catch (System.Exception e) { Debug.LogWarning("Multijugador: no se pudo guardar: " + e.Message); }
+    }
+
+    public void RegistrarEntrega(int forma, int color)
+    {
+        historial.entregas++;
+        int i = forma * 4 + color;
+        if (i >= 0 && i < 16 && !historial.album[i])
+        {
+            historial.album[i] = true;
+            Aviso($"¡Nueva figura en tu álbum!\n<size=40>{NombrePieza(forma, color)}  ·  Tab</size>", 2.5f);
+        }
+        GuardarHistorial();
+    }
+
+    void GuardarRonda(int puntosEquipo, int mias)
+    {
+        historial.rondas++;
+        historial.mejorEquipo = Mathf.Max(historial.mejorEquipo, puntosEquipo);
+        GuardarHistorial();
+    }
+
+    void ConstruirMenus()
+    {
+        Transform l = LiceneUI.Lienzo("Menus LICENE", transform, 20);
+        var a = LiceneUI.Tarjeta("Album", l, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(980f, 760f), LiceneUI.Acento2);
+        LiceneUI.Texto(a.transform, "Mi álbum de figuras", 46, new Vector2(0.5f, 1f), new Vector2(0f, -55f), new Vector2(900f, 64f));
+        resumenAlbum = LiceneUI.Texto(a.transform, "", 24, new Vector2(0.5f, 1f), new Vector2(0f, -100f), new Vector2(900f, 34f), TextAnchor.MiddleCenter, FontStyle.Normal, new Color(1f, 1f, 1f, 0.75f));
+        for (int f = 0; f < 4; f++)
+        {
+            LiceneUI.Texto(a.transform, PiezaLICENE.Formas[f], 26, new Vector2(0.5f, 1f), new Vector2(-330f, -190f - f * 130f), new Vector2(200f, 40f), TextAnchor.MiddleLeft);
+            for (int c = 0; c < 4; c++)
+            {
+                var celda = LiceneUI.Panel("Celda", a.transform, new Vector2(0.5f, 1f), new Vector2(-110f + c * 150f, -190f - f * 130f), new Vector2(110f, 110f), PiezaLICENE.Tintes[c]);
+                if (f == 1) celda.rectTransform.localRotation = Quaternion.Euler(0f, 0f, 45f); // la esfera se distingue girada
+                celdas[f * 4 + c] = celda;
+            }
+        }
+        LiceneUI.Texto(a.transform, "Tab para cerrar", 22, new Vector2(0.5f, 0f), new Vector2(0f, 20f), new Vector2(600f, 30f), TextAnchor.MiddleCenter, FontStyle.Normal, new Color(1f, 1f, 1f, 0.6f));
+        album = a.gameObject;
+        album.SetActive(false);
+
+        LiceneCuentaPanel.Crear(l);
+        LiceneMenuPausa.Crear(l, "Laboratorio Cooperativo",
+            "<b>Moverte:</b> WASD   ·   <b>Mirar:</b> mouse   ·   <b>Correr:</b> Shift   ·   <b>Saltar:</b> Espacio\n" +
+            "<b>Tomar / soltar figura:</b> E   ·   <b>Lanzar:</b> clic\n" +
+            "<b>Álbum:</b> Tab   ·   <b>Cuenta LICENE:</b> L   ·   <b>Menú:</b> Esc\n\n" +
+            "Toma una figura de la mesa central y llévala a la plataforma de su mismo color.\n" +
+            "Cada entrega suma un punto para todo el equipo. ¡Lleguen juntos a la meta!\n" +
+            "Las figuras nuevas que entregas se guardan en tu álbum para siempre.",
+            null, false, () => Launcher.Salir(null));
+    }
+
+    void ActualizarAlbum()
+    {
+        int n = 0;
+        for (int i = 0; i < 16; i++)
+        {
+            bool tiene = historial.album[i];
+            if (tiene) n++;
+            Color c = PiezaLICENE.Tintes[i % 4];
+            celdas[i].color = tiene ? c : new Color(c.r, c.g, c.b, 0.12f);
+        }
+        resumenAlbum.text = $"{n} de 16 figuras  ·  Rondas jugadas: {historial.rondas}  ·  Entregas: {historial.entregas}  ·  Mejor equipo: {historial.mejorEquipo}";
     }
 
     // ---------- HUD ----------
@@ -324,7 +424,7 @@ public class RetoCooperativo : MonoBehaviourPunCallbacks, IOnEventCallback
         aviso.outlineWidth = 0.2f;
         ayuda = UIKit.Texto(c, "", 32f, new Vector2(0.5f, 0.5f), new Vector2(0f, -230f), new Vector2(1500f, 60f), TextAlignmentOptions.Center, Color.white, FontStyles.Bold);
         ayuda.outlineWidth = 0.25f;
-        UIKit.Texto(c, "WASD mover · Mouse mirar · <b>E</b> tomar/soltar · <b>Clic</b> lanzar · Espacio saltar · Shift correr · Esc cursor · <b>F10</b> salir",
+        UIKit.Texto(c, "WASD mover · Mouse mirar · <b>E</b> tomar/soltar · <b>Clic</b> lanzar · Espacio saltar · Shift correr · <b>Tab</b> álbum · <b>Esc</b> menú",
             24f, new Vector2(0.5f, 0f), new Vector2(0f, 30f), new Vector2(1600f, 40f), TextAlignmentOptions.Center, new Color(1f, 1f, 1f, 0.65f));
 
         panelResultado = UIKit.Estirar(UIKit.Panel("Resultado", c, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero, new Color(0.03f, 0.05f, 0.12f, 0.75f)));
@@ -347,7 +447,8 @@ public class RetoCooperativo : MonoBehaviourPunCallbacks, IOnEventCallback
 
     void ActualizarHud()
     {
-        if (Input.GetKeyDown(KeyCode.F10)) { Launcher.Salir(null); return; }
+        if (LiceneUI.TeclaPresionada(KeyCode.Tab) && album != null) album.SetActive(!album.activeSelf);
+        if (album != null && album.activeSelf) ActualizarAlbum();
 
         if (!PhotonNetwork.InRoom)
         {
@@ -358,7 +459,7 @@ public class RetoCooperativo : MonoBehaviourPunCallbacks, IOnEventCallback
 
         float r = Restante;
         bool fin = RondaTerminada;
-        reloj.text = $"{(int)(r / 60f)}:{(int)(r % 60f):00}";
+        reloj.text = LiceneAjustes.SinTiempo ? "<size=34>Ronda</size>" : $"{(int)(r / 60f)}:{(int)(r % 60f):00}";
         reloj.color = r < 20f && !fin ? Color.Lerp(Color.white, new Color(1f, 0.35f, 0.3f), Mathf.PingPong(Time.time * 2f, 1f)) : Color.white;
         marcador.text = $"Equipo  <color=#7CFF9A>{Puntos}</color> / {Meta}";
 

@@ -71,17 +71,18 @@ public class PlayerController : MonoBehaviourPun
         if (!photonView.IsMine) return;
 
         // Esc libera el cursor; un clic lo vuelve a capturar.
-        if (Input.GetKeyDown(KeyCode.Escape)) BloquearCursor(false);
-        else if (Input.GetMouseButtonDown(0) && Cursor.lockState != CursorLockMode.Locked) BloquearCursor(true);
+        // Con el menú o la cuenta abiertos no se mueve ni se mira (la red sigue funcionando).
+        if (LiceneMenuPausa.Pausado || LiceneCuentaPanel.Abierto) return;
+        if (Input.GetMouseButtonDown(0) && Cursor.lockState != CursorLockMode.Locked) BloquearCursor(true);
 
         // --- Cámara (el eje del mouse ya es un desplazamiento: no se multiplica por deltaTime) ---
         if (Cursor.lockState == CursorLockMode.Locked)
         {
-            rotacionObjetivo.x -= Input.GetAxis("Mouse Y") * sensibilidadMouse * 0.02f;
-            rotacionObjetivo.y += Input.GetAxis("Mouse X") * sensibilidadMouse * 0.02f;
+            rotacionObjetivo.x -= Input.GetAxis("Mouse Y") * sensibilidadMouse * 0.02f * LiceneAjustes.Sensibilidad;
+            rotacionObjetivo.y += Input.GetAxis("Mouse X") * sensibilidadMouse * 0.02f * LiceneAjustes.Sensibilidad;
             rotacionObjetivo.x = Mathf.Clamp(rotacionObjetivo.x, -85f, 85f);
         }
-        float t = 1f - Mathf.Exp(-suavizadoCamara * Time.deltaTime);
+        float t = 1f - Mathf.Exp(-(LiceneAjustes.CamaraSuave ? suavizadoCamara * 0.45f : suavizadoCamara) * Time.deltaTime);
         rotacionActual = Vector2.Lerp(rotacionActual, rotacionObjetivo, t);
         if (camara != null) camara.localRotation = Quaternion.Euler(rotacionActual.x, 0f, 0f);
         transform.rotation = Quaternion.Euler(0f, rotacionActual.y, 0f);
