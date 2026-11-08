@@ -77,3 +77,7 @@ crashlytics-build.properties
 # --- Agregado: builds/ejecutables en la raiz (no se suben a GitHub) ---
 /*.zip
 /*.exe
+
+# Resultados de pruebas automaticas
+multi_*.png
+multi_smoke.txt

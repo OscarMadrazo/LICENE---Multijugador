@@ -10,7 +10,7 @@ public class EnemyAI : MonoBehaviour
     public float attackRange = 2f;      // Distancia para atacar
     public float attackCooldown = 1.5f; // Tiempo entre ataques
     public int damage = 10;
-    public float rotacionSuave = 5f;    // Velocidad de rotaciÛn hacia el jugador
+    public float rotacionSuave = 5f;    // Velocidad de rotaci√≥n hacia el jugador
 
     private NavMeshAgent agent;
     private float lastAttackTime;
@@ -44,7 +44,7 @@ public class EnemyAI : MonoBehaviour
                 transform.rotation = Quaternion.Slerp(transform.rotation, rotacionObjetivo, Time.deltaTime * rotacionSuave);
             }
 
-            // Atacar si est· en rango
+            // Atacar si est√° en rango
             if (distancia <= attackRange)
             {
                 Attack();
@@ -52,7 +52,7 @@ public class EnemyAI : MonoBehaviour
         }
         else
         {
-            // Detener movimiento si el jugador est· fuera de rango
+            // Detener movimiento si el jugador est√° fuera de rango
             agent.SetDestination(transform.position);
         }
     }

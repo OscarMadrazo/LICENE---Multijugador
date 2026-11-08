@@ -13,7 +13,7 @@ public class GameManagerPUN : MonoBehaviourPunCallbacks
 
     void Start()
     {
-        // Conecta a Photon usando la configuración de PhotonServerSettings
+        // Conecta a Photon usando la configuraciÃ³n de PhotonServerSettings
         PhotonNetwork.ConnectUsingSettings();
     }
 
@@ -38,7 +38,7 @@ public class GameManagerPUN : MonoBehaviourPunCallbacks
             return;
         }
 
-        // Spawn aleatorio dentro del área definida
+        // Spawn aleatorio dentro del Ã¡rea definida
         Vector3 spawnPos = new Vector3(
             Random.Range(spawnAreaMin.x, spawnAreaMax.x),
             spawnAreaMin.y,
