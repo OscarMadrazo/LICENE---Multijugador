@@ -156,6 +156,7 @@ public class LiceneCuentaPanel : MonoBehaviour
         boton = LiceneUI.Boton(p.transform, "Iniciar sesión", new Vector2(0.5f, 1f), new Vector2(0f, -300f), new Vector2(540f, 64f), new Color(1f, 0.55f, 0.15f), Entrar);
         estado = LiceneUI.Texto(p.transform, "", 22, new Vector2(0.5f, 0f), new Vector2(0f, 40f), new Vector2(600f, 30f), TextAnchor.MiddleCenter, FontStyle.Normal);
         LiceneUI.Texto(p.transform, "L para cerrar", 20, new Vector2(0.5f, 0f), new Vector2(0f, 12f), new Vector2(600f, 26f), TextAnchor.MiddleCenter, FontStyle.Normal, new Color(1f, 1f, 1f, 0.55f));
+        clave.onSubmit.AddListener(_ => Entrar()); // Enter en la contraseña también entra.
         panel = p.gameObject;
         panel.SetActive(false);
         LiceneCloud.Flush();
@@ -186,6 +187,7 @@ public class LiceneCuentaPanel : MonoBehaviour
     {
         if (LiceneCloud.SignedIn) { LiceneCloud.SignOut(); estado.text = "Sesión cerrada"; return; }
         if (string.IsNullOrWhiteSpace(correo.text) || string.IsNullOrEmpty(clave.text)) { estado.text = "Escribe tu correo y contraseña"; return; }
+        if (LiceneCloud.IniciandoSesion) return;
         boton.interactable = false;
         estado.text = "Conectando...";
         LiceneCloud.SignIn(correo.text.Trim(), clave.text, (ok, mensaje) =>

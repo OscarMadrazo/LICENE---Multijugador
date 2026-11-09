@@ -52,9 +52,20 @@ public class LiceneCloud : MonoBehaviour
 
     // ---------- Sesión ----------
 
+    static bool iniciandoSesion;
+    public static bool IniciandoSesion => iniciandoSesion;
+
+    // Un solo intento a la vez (evita dobles clics) y siempre responde: como máximo en 15 s.
     public static void SignIn(string email, string password, Action<bool, string> done)
     {
-        Instance.StartCoroutine(Instance.SignInRoutine(email.Trim(), password, done));
+        if (iniciandoSesion) return;
+        iniciandoSesion = true;
+        Instance.StartCoroutine(Instance.SignInRoutine((email ?? "").Trim(), password ?? "", (ok, msg) =>
+        {
+            iniciandoSesion = false;
+            try { done?.Invoke(ok, msg); }
+            catch (Exception e) { Debug.LogWarning("LiceneCloud: error al avisar del inicio de sesión: " + e.Message); }
+        }));
     }
 
     public static void SignOut()
@@ -112,6 +123,7 @@ public class LiceneCloud : MonoBehaviour
         form.AddField("refresh_token", refresh);
         using (UnityWebRequest req = UnityWebRequest.Post("https://securetoken.googleapis.com/v1/token?key=" + ApiKey, form))
         {
+            req.timeout = 15;
             yield return req.SendWebRequest();
             if (req.result != UnityWebRequest.Result.Success)
             {
@@ -311,7 +323,8 @@ public class LiceneCloud : MonoBehaviour
 
     static string FriendlyAuthError(UnityWebRequest req)
     {
-        if (req.result == UnityWebRequest.Result.ConnectionError) return "Sin conexión a internet";
+        if (req.result == UnityWebRequest.Result.ConnectionError)
+            return (req.error ?? "").ToLowerInvariant().Contains("timeout") ? "La conexión tardó demasiado. Revisa tu internet" : "Sin conexión a internet";
 
         string code = "";
         try { code = JsonUtility.FromJson<ErrorWrapper>(req.downloadHandler.text)?.error?.message ?? ""; }

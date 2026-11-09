@@ -136,10 +136,12 @@ public class MainMenuLauncher : MonoBehaviourPunCallbacks
     {
         if (LiceneCloud.SignedIn) { LiceneCloud.SignOut(); ActualizarCuenta(); return; }
         if (string.IsNullOrWhiteSpace(correo.text) || string.IsNullOrEmpty(clave.text)) { estadoCuenta.text = "Escribe tu correo y contraseña de LICENE"; return; }
+        if (LiceneCloud.IniciandoSesion) return;
         botonCuenta.interactable = false;
         estadoCuenta.text = "Conectando con LICENE...";
         LiceneCloud.SignIn(correo.text.Trim(), clave.text, (ok, mensaje) =>
         {
+            if (botonCuenta == null) return; // la escena ya cambió
             botonCuenta.interactable = true;
             clave.text = "";
             ActualizarCuenta();
