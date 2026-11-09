@@ -145,6 +145,10 @@ public static class MultiSmokeTest
                 break;
             case 7:
                 if (Esperar(1.5)) return;
+                Check("Comunicación sin escribir activa", Object.FindFirstObjectByType<ComunicacionLICENE>() != null);
+                var enviar = typeof(ComunicacionLICENE).GetMethod("Enviar", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                enviar.Invoke(Object.FindFirstObjectByType<ComunicacionLICENE>(), new object[] { (byte)10, 0, Vector3.zero });
+                Check("Reacción visible sobre el jugador", GameObject.Find("Reaccion") != null);
                 LiceneMenuPausa.Instance.Mostrar(true);
                 Check("Menú abierto sin detener la red", LiceneMenuPausa.Pausado && Time.timeScale == 1f);
                 Captura("multi_pausa.png", PlayerController.Local.camara.GetComponent<Camera>(), null, null, true);

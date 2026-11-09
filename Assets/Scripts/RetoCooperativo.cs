@@ -372,7 +372,8 @@ public class RetoCooperativo : MonoBehaviourPunCallbacks, IOnEventCallback
         LiceneMenuPausa.Crear(l, "Laboratorio Cooperativo",
             "<b>Moverte:</b> WASD   ·   <b>Mirar:</b> mouse   ·   <b>Correr:</b> Shift   ·   <b>Saltar:</b> Espacio\n" +
             "<b>Tomar / soltar figura:</b> E   ·   <b>Lanzar:</b> clic\n" +
-            "<b>Álbum:</b> Tab   ·   <b>Cuenta LICENE:</b> L   ·   <b>Menú:</b> Esc\n\n" +
+            "<b>Álbum:</b> Tab   ·   <b>Cuenta LICENE:</b> L   ·   <b>Menú:</b> Esc\n" +
+            "<b>Reacciones:</b> 1 ¡Bien!  2 ¡Ayuda!  3 ¡Gracias!  4 ¡Por aquí!   ·   <b>Marcar lugar:</b> G\n\n" +
             "Toma una figura de la mesa central y llévala a la plataforma de su mismo color.\n" +
             "Cada entrega suma un punto para todo el equipo. ¡Lleguen juntos a la meta!\n" +
             "Las figuras nuevas que entregas se guardan en tu álbum para siempre.",
@@ -424,7 +425,7 @@ public class RetoCooperativo : MonoBehaviourPunCallbacks, IOnEventCallback
         aviso.outlineWidth = 0.2f;
         ayuda = UIKit.Texto(c, "", 32f, new Vector2(0.5f, 0.5f), new Vector2(0f, -230f), new Vector2(1500f, 60f), TextAlignmentOptions.Center, Color.white, FontStyles.Bold);
         ayuda.outlineWidth = 0.25f;
-        UIKit.Texto(c, "WASD mover · Mouse mirar · <b>E</b> tomar/soltar · <b>Clic</b> lanzar · Espacio saltar · Shift correr · <b>Tab</b> álbum · <b>Esc</b> menú",
+        UIKit.Texto(c, "WASD mover · Mouse mirar · <b>E</b> tomar/soltar · <b>Clic</b> lanzar · Espacio saltar · Shift correr · <b>Tab</b> álbum · <b>1-4</b> reacciones · <b>G</b> marcar · <b>Esc</b> menú",
             24f, new Vector2(0.5f, 0f), new Vector2(0f, 30f), new Vector2(1600f, 40f), TextAlignmentOptions.Center, new Color(1f, 1f, 1f, 0.65f));
 
         panelResultado = UIKit.Estirar(UIKit.Panel("Resultado", c, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero, new Color(0.03f, 0.05f, 0.12f, 0.75f)));
@@ -439,7 +440,7 @@ public class RetoCooperativo : MonoBehaviourPunCallbacks, IOnEventCallback
         avisoHasta = Time.time + segundos;
     }
 
-    void Noticia(string texto)
+    public void Noticia(string texto)
     {
         noticias.Insert(0, texto);
         if (noticias.Count > 6) noticias.RemoveAt(noticias.Count - 1);
